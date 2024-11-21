@@ -1,0 +1,17 @@
+return {
+  "rust_analyzer",
+  "ts_ls",
+  "html",
+  "cssls",
+  "emmet_ls",
+  "jsonls",
+  "pyright",
+  "rust_analyzer",
+  "gopls",
+  "marksman",
+  "vtsls",
+  "gitui",
+  "grammarly",
+  "vale_ls",
+  "jdtls",
+}

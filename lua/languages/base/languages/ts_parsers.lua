@@ -1,0 +1,22 @@
+return {
+  'bash',
+  'css',
+  'dart',
+  'elixir',
+  'gitcommit',
+  'go',
+  'html',
+  'java',
+  'javascript',
+  'json',
+  'lua',
+  'markdown',
+  'markdown_inline', -- markdown code blocks
+  'python',
+  'ruby',
+  'rust',
+  'typescript',
+  'vim',
+  'vimdoc',
+  'yaml',
+}
