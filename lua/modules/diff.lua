@@ -18,6 +18,16 @@ return { -- Diff modules ~6~
         },
         config = true,
     },
+    {
+        "NeogitOrg/neogit",
+        depends = {
+            "nvim-lua/plenary.nvim", -- required
+            "sindrets/diffview.nvim",
+        },
+        require = "neogit",
+        cmd = "Neogit",
+        opts = {},
+    },
     { -- Git UI visualization platform
         'tanvirtin/vgit.nvim',
         depends = { 'nvim-lua/plenary.nvim' },

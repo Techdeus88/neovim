@@ -3,7 +3,6 @@ local conditions = require "base.utils"
 local icons = require("base.utils").get_icons()
 local funcs = require "core.funcs"
 
-
 local S = {}
 
 function S.DeusCountPlugins()
@@ -180,10 +179,10 @@ S.Diagnostics = function()
   return {
 
     init = function(self)
-      self.error_icon = vim.diagnostic.config()['signs']['text'][vim.diagnostic.severity.ERROR]
-      self.warn_icon = vim.diagnostic.config()['signs']['text'][vim.diagnostic.severity.WARN]
-      self.info_icon = vim.diagnostic.config()['signs']['text'][vim.diagnostic.severity.INFO]
-      self.hint_icon = vim.diagnostic.config()['signs']['text'][vim.diagnostic.severity.HINT]
+      self.error_icon = vim.diagnostic.config()["signs"]["text"][vim.diagnostic.severity.ERROR]
+      self.warn_icon = vim.diagnostic.config()["signs"]["text"][vim.diagnostic.severity.WARN]
+      self.info_icon = vim.diagnostic.config()["signs"]["text"][vim.diagnostic.severity.INFO]
+      self.hint_icon = vim.diagnostic.config()["signs"]["text"][vim.diagnostic.severity.HINT]
       self.errors = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR })
       self.warnings = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.WARN })
       self.hints = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.HINT })
@@ -194,7 +193,7 @@ S.Diagnostics = function()
       provider = function(self)
         return self.error_icon .. self.errors .. " "
       end,
-      hl = "DiagnosticError"
+      hl = "DiagnosticError",
     },
     {
       provider = "│ ",
@@ -237,7 +236,7 @@ S.DeusFileSize = function()
 
       fsize = (fsize < 0 and 0) or fsize
       if fsize < 1024 then
-        return fsize .. suffix[1]
+        return string.format(" %s %s ", icons.kind.Unit, fsize .. suffix[1])
       end
 
       local i = math.floor((math.log(fsize) / math.log(1024)))
@@ -252,7 +251,7 @@ end
 S.DeusGitdiff = function()
   return {
     init = function(self)
-      local icons = require("base.ui.icons")
+      local icons = require "base.ui.icons"
       self.status_dict = vim.b.gitsigns_status_dict or {}
       self.has_changes = self.status_dict.added ~= 0 or self.status_dict.removed ~= 0 or self.status_dict.changed ~= 0
       self.icons = { deleted = icons.GitDelete, changed = icons.GitChange, added = icons.GitAdd }
@@ -289,7 +288,7 @@ S.get_statusline = function()
     condition = function()
       return conditions.is_active()
     end,
-    C.DeusMode('left'),
+    C.DeusMode "left",
     S.DeusFileSize(),
     C.Space(5),
     S.DeusGitdiff(),
@@ -305,8 +304,20 @@ S.get_statusline = function()
     C.Space(5),
     {
       C.Space(1),
-      lib.component.file_info({ filetype = {}, filename = false, file_icon = false, file_modified = false, surround = { color = "#101010" } }),
-      lib.component.file_info({ file_icon = {}, filetype = false, filename = false, file_modified = false, surround = { color = "#101010" } }),
+      lib.component.file_info {
+        filetype = {},
+        filename = false,
+        file_icon = false,
+        file_modified = false,
+        surround = { color = "#101010" },
+      },
+      lib.component.file_info {
+        file_icon = {},
+        filetype = false,
+        filename = false,
+        file_modified = false,
+        surround = { color = "#101010" },
+      },
       hl = { bg = "#101010", fg = "" },
     },
     S.DeusCountPlugins(),
