@@ -47,4 +47,10 @@ luac.out
 .git/cs_workspaces
 cs_files
 cs_workspaces
+<<<<<<< HEAD
 >>>>>>> 9f30657 (New version of custom Techdeps config)
+||||||| parent of e314c93 (Update git ignore)
+=======
+
+.env
+>>>>>>> e314c93 (Update git ignore)
