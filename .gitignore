@@ -39,4 +39,12 @@ luac.out
 *.x86_64
 *.hex
 
+<<<<<<< HEAD
 .env
+||||||| parent of 9f30657 (New version of custom Techdeps config)
+=======
+.git/cs_files
+.git/cs_workspaces
+cs_files
+cs_workspaces
+>>>>>>> 9f30657 (New version of custom Techdeps config)

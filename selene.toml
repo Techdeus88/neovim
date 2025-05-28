@@ -1,0 +1,10 @@
+[general]
+std = "lua54"
+
+[diagnostics]
+enable = ["unused_variable", "unused_import"]
+disable = ["trailing_whitespace"]
+
+[files]
+include = ["**/*.lua"]
+exclude = ["**/vendor/**"]

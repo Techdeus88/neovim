@@ -1,203 +1,45 @@
-local globals = require("core.globals")
-local icons = require("configs.base.ui.icons")
-require("configs.base.utils")
+local F = {}
 
-local M = {}
-
-M.merge = function(tbl1, tbl2)
-  if type(tbl1) == "table" and type(tbl2) == "table" then
-    for k, v in pairs(tbl2) do
-      if type(v) == "table" and type(tbl1[k] or false) == "table" then
-        M.merge(tbl1[k], v)
-      else
-        tbl1[k] = v
-      end
-    end
+--- @return table<string,table> # a table with entries for each map mode.
+function F.safe_require(module)
+  local ok, mod = pcall(require, module)
+  if not ok then
+    vim.notify(string.format('Error loading module: %s', vim.inspect(module)), vim.log.levels.ERROR)
+    return { ok }
   end
-  return tbl1
+  return mod
 end
 
-M.sort = function(tbl)
-  local arr = {}
-  for key, value in pairs(tbl) do
-    arr[#arr + 1] = { key, value }
-  end
-  for ix, value in ipairs(arr) do
-    tbl[ix] = value
-  end
-  return tbl
+-- Debugging utility to print a table
+--- @return nil
+--- @param tbl table<string, table|number|string|boolean|nil>
+function F.pretty_print(tbl)
+  print(vim.inspect(tbl))
 end
 
-M.has_value = function(table, value)
-  for _, v in ipairs(table) do
-    if v == value then
-      return true
-    end
-  end
-  return false
-end
-
-M.pairsByKeys = function(t, f)
-  local a = {}
-  for n in pairs(t) do table.insert(a, n) end
-  table.sort(a, f)
-  local i = 0      -- iterator variable
-  local iter = function ()   -- iterator function
-    i = i + 1
-    if a[i] == nil then return nil
-    else return a[i], t[a[i]]
-    end
-  end
-  return iter
-end
-
-M.merge_unique = function(table1, table2)
-  local merged = {}
-  for _, v in ipairs(table1) do
-    if not M.has_value(merged, v) then
-      table.insert(merged, v)
-    end
-  end
-  for _, v in ipairs(table2) do
-    if not M.has_value(merged, v) then
-      table.insert(merged, v)
-    end
-  end
-  return merged
-end
-
--- local a = {"a", "b", "c", "d"}
--- local order = {"c", "b", "d", "a"}
--- table.sort(a, M.custom_sort(order))
-M.custom_sort = function(order)
-  return function(a, b)
-    local indexA = 0
-    local indexB = 0
-    for i, value in ipairs(order) do
-      if value == a then
-        indexA = i
-      elseif value == b then
-        indexB = i
-      end
-    end
-    return indexA < indexB
-  end
-end
-
-M.find_key_by_value = function(tbl, search_value)
-  for key, value in pairs(tbl) do
-    if type(value) == "table" then
-      for _, v in ipairs(value) do
-        if v == search_value then
-          return key
-        end
-      end
-    end
-  end
-  return nil
-end
-
-M.get_all_keys = function(tbl)
-  local keys = {}
-  for k, _ in pairs(tbl) do
-    table.insert(keys, k)
-  end
-  return keys
-end
-
-M.keymaps = function(mode, opts, keymaps)
-  for _, keymap in ipairs(keymaps) do
-    if keymap[3] ~= nil then
-      opts.desc = keymap[3]
-    else
-      opts.desc = nil
-    end
-    vim.keymap.set(mode, keymap[1], keymap[2], opts)
-  end
-end
-
-M.configs = function()
-  local base_configs = require("configs.base")
-  for _, func in M.pairsByKeys(base_configs) do
-    if type(func) == "function" then
-      MiniDeps.now(function()
-        func()
-        add_to_log(string.format("Base Config Complete- %s", _))
-      end)
-    end
-  end
-end
-
-M.remove_duplicate = function(tbl)
-  local hash = {}
-  local res = {}
-  for _, v in ipairs(tbl) do
-    if not hash[v] then
-      res[#res + 1] = v
-      hash[v] = true
-    end
-  end
-  return res
-end
-
-M.sudo_exec = function(cmd)
-  local notify = require("lvim-ui-config.notify")
-  vim.fn.inputsave()
-  local password = vim.fn.inputsecret("Password: ")
-  vim.fn.inputrestore()
-  if not password or #password == 0 then
-    notify.error("Invalid password, sudo aborted!", {
-      title = "Deus IDE",
-    })
-    return false
-  end
-  vim.fn.system(string.format("sudo -p '' -S %s", cmd), password)
-  if vim.v.shell_error ~= 0 then
-    notify.error("Shell error or invalid password, sudo aborted!", {
-      title = "Deus IDE",
-    })
-    return false
-  end
-  return true
-end
-
-M.sudo_write = function(tmpfile, filepath)
-  local notify = require("lvim-ui-config.notify")
-  if not tmpfile then
-    tmpfile = vim.fn.tempname()
-  end
-  if not filepath then
-    filepath = vim.fn.expand("%")
-  end
-  if not filepath or #filepath == 0 then
-    notify.error("No file name!", {
-      title = "Deus IDE",
-    })
-    return
-  end
-  local cmd = string.format("dd if=%s of=%s bs=1048576", vim.fn.shellescape(tmpfile), vim.fn.shellescape(filepath))
-  ---@diagnostic disable-next-line: undefined-field
-  vim.api.nvim_exec(string.format("write! %s", tmpfile), true)
-  if M.sudo_exec(cmd) then
-    notify.info(string.format('"%s" written!', filepath), {
-      title = "Deus IDE",
-    })
-    vim.cmd("e!")
-  end
-  vim.fn.delete(tmpfile)
-end
-
-M.file_exists = function(name)
-  local f = io.open(name, "r")
+--- @return boolean | nil
+function F.file_exists(name)
+  local f = io.open(name, 'r')
   return f ~= nil and io.close(f)
 end
 
-M.dir_exists = function(path)
-  return M.file_exists(path)
+--- @return boolean | nil
+function F.dir_exists(path)
+  return F.file_exists(path)
 end
 
-M.read_file = function(file)
-  -- local notify = require("modules.build_me.base.notify")
+function F.debounce(ms, fn)
+  local timer = vim.uv.new_timer()
+  return function(...)
+    local argv = { ... }
+    timer:start(ms, 0, function()
+      timer:stop()
+      vim.schedule_wrap(fn)(unpack(argv))
+    end)
+  end
+end
+
+function F.read_file(file)
   local content
   local file_content_ok, _ = pcall(function()
     content = vim.fn.readfile(file)
@@ -205,54 +47,47 @@ M.read_file = function(file)
   if not file_content_ok then
     return nil
   end
-  if type(content) == "table" then
+  if type(content) == 'table' then
     return vim.fn.json_decode(content)
   else
     return nil
   end
 end
 
-M.write_file = function(file, content)
-  local notify = require("modules.build_me.base.notify")
-  local f = io.open(file, "w")
+function F.write_file(file, content)
+  local f = io.open(file, 'w')
   if f ~= nil then
-    if type(content) == "table" then
+    if type(content) == 'table' then
       content = vim.fn.json_encode(content)
     end
-    f:write(content, '\n')
+    f:write(content)
     f:close()
-    notify.info(string.format("File Written: %s------%s characters", file, #content), { title = "DEUS IDE" })
   end
 end
 
-M.copy_file = function(file, dest)
-  os.execute("cp " .. file .. " " .. dest)
+F.copy_file = function(file, dest)
+  os.execute('cp ' .. file .. ' ' .. dest)
 end
 
-M.delete_file = function(f)
+F.delete_file = function(f)
   os.remove(f)
 end
 
-M.delete_packages_file = function()
-  local deus_packages_file = globals.cache_path .. "/.deus_packages"
-  os.remove(deus_packages_file)
-end
-
-M.change_path = function()
+F.change_path = function()
   return vim.fn.input("Path: ", vim.fn.getcwd() .. "/", "file")
 end
 
-M.set_global_path = function()
-  local path = M.change_path()
+F.set_global_path = function()
+  local path = F.change_path()
   vim.api.nvim_command("silent :cd " .. path)
 end
 
-M.set_window_path = function()
-  local path = M.change_path()
+F.set_window_path = function()
+  local path = F.change_path()
   vim.api.nvim_command("silent :lcd " .. path)
 end
 
-M.file_size = function(size, options)
+F.file_size = function(size, options)
   local si = {
     bits = { "b", "Kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "Yb" },
     bytes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" },
@@ -350,192 +185,129 @@ M.file_size = function(size, options)
   end
 end
 
-M.get_snapshot = function()
-  local file_content = M.read_file(globals.cache_path .. "/.deus_snapshot")
-  if file_content ~= nil then
-    if file_content["snapshot"] ~= nil then
-      return file_content["snapshot"]
+F.remove_duplicate = function(tbl)
+  if type(tbl) ~= "table" then return end
+  local hash = {}
+  local res = {}
+  for _, v in ipairs(tbl) do
+    if not hash[v] then
+      res[#res + 1] = v
+      hash[v] = true
     end
   end
-  return globals.snapshot_path .. "/default"
+  return res
 end
 
-M.get_commit = function(plugin, plugins_snapshot)
-  if plugins_snapshot ~= nil then
-    if plugins_snapshot[plugin] ~= nil and plugins_snapshot[plugin].commit ~= nil then
-      return plugins_snapshot[plugin].commit
-    end
-  else
-    return nil
+F.delete_packages_file = function()
+  local deus_packages_file = Global.cache_path .. '/.deus_packages'
+  os.remove(deus_packages_file)
+end
+
+function F.deus_notify()
+  -- delay notifications till funcs.notify was replaced or after 500ms
+  local notifs = {}
+  local function temp(...)
+    table.insert(notifs, vim.F.pack_len(...))
   end
+
+  local orig = vim.notify
+  vim.notify = temp
+
+  local timer = vim.uv.new_timer()
+  local check = assert(vim.uv.new_check())
+
+  local replay = function()
+    timer:stop()
+    check:stop()
+    if vim.notify == temp then
+      vim.notify = orig -- put back the original notify if needed
+    end
+    vim.schedule(function()
+      ---@diagnostic disable-next-line: no-unknown
+      for _, notif in ipairs(notifs) do
+        vim.notify(tostring(vim.F.unpack_len(notif)))
+      end
+    end)
+  end
+
+  -- wait till funcs.notify has been replaced
+  check:start(function()
+    if vim.notify ~= temp then
+      replay()
+    end
+  end)
+  -- or if it took more than 500ms, then something went wrong
+  timer:start(500, 0, replay)
+  Debug.log("Notifications delayed", "default")
 end
 
-M.close_float_windows = function()
-  local closed_windows = {}
-  vim.schedule(function()
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      if vim.api.nvim_win_is_valid(win) then
-        local config = vim.api.nvim_win_get_config(win)
-        if config.relative ~= "" then
-          vim.api.nvim_win_close(win, false)
-          table.insert(closed_windows, win)
+local multi_line_patterns = {
+  "%-%-%[%[.-%]%]", -- --[[ multi-line comment ]]
+  "/%*.-%*/",       -- /* multi-line comment */
+  "<!%-%-.-%-%->",  -- <!-- multi-line comment -->
+}
+
+local single_line_patterns = {
+  "^%s*%-%-[^%-%[].*$", -- -- single-line comment (but not ---)
+  "^%s*//.*$",          -- // single-line comment
+  "^%s*#[^%x%d].*$",    -- # single-line comment (but not #hex)
+  "^%s*;.*$",           -- ; single-line comment
+  "^%s*{{!.-}}%s*$",    -- {{! handlebars single-line comment }}
+  "^%s*{#.-#}%s*$",     -- {# django/jinja single-line comment #}
+  "%s%-%-[^%-%[].*$",   -- inline -- comment
+  "%s//.*$",            -- inline // comment
+  "%s#[^%x%d].*$",      -- inline # comment (but not #hex)
+  "%s;.*$",             -- inline ; comment
+}
+
+F.remove_comments = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local original_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local content = table.concat(original_lines, "\n")
+  local multi_line_comment_count = 0
+  local multi_line_total_lines = 0
+  for _, pattern in ipairs(multi_line_patterns) do
+    content = content:gsub(pattern, function(match)
+      multi_line_comment_count = multi_line_comment_count + 1
+      local line_count = select(2, match:gsub("\n", "")) + 1
+      multi_line_total_lines = multi_line_total_lines + line_count
+      return string.rep("\n", line_count)
+    end)
+  end
+  local lines = vim.split(content, "\n", { trimempty = false })
+  local result_lines = {}
+  local single_line_comment_count = 0
+  for i, line in ipairs(lines) do
+    local modified_line = line
+    local is_original_empty = original_lines[i] and original_lines[i]:match("^%s*$") or false
+    if not modified_line:match("#%x%x%x%x%x%x?") then
+      for _, pattern in ipairs(single_line_patterns) do
+        local before = #modified_line
+        modified_line = modified_line:gsub(pattern, "")
+        if #modified_line < before then
+          single_line_comment_count = single_line_comment_count + 1
         end
       end
     end
-  end)
-end
-
-M.quit = function()
-  local status = true
-  for _, v in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.bo[v].modified then
-      status = false
+    modified_line = modified_line:gsub("%s+$", "")
+    if modified_line:match("%S") or is_original_empty then
+      table.insert(result_lines, modified_line)
     end
   end
-  if not status then
-    local ui_config = require("modules.build_me.base.config")
-    local select = require("modules.build_me.base.select")
-    local opts = ui_config.select({
-      "Save all and Quit",
-      "Don't save and Quit",
-      "Cancel",
-    }, { prompt = icons.common.warning .. " Unsaved files" }, {})
-    select(opts, function(choice)
-      if choice == "Save all and Quit" then
-        vim.cmd("wa")
-        vim.cmd("qa")
-      elseif choice == "Don't save and Quit" then
-        vim.cmd("qa!")
-      end
-    end)
-  else
-    vim.cmd("qa")
-  end
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, result_lines)
+  vim.notify(
+    "Deleted comments: \n"
+    .. "Single-line: "
+    .. single_line_comment_count
+    .. "\n"
+    .. "Multi-line: "
+    .. multi_line_comment_count
+    .. " (Total lines: "
+    .. multi_line_total_lines
+    .. ")",
+    vim.log.levels.INFO
+  )
 end
 
-M.hexToRgb = function(c)
-  c = string.lower(c)
-  return { tonumber(c:sub(2, 3), 16), tonumber(c:sub(4, 5), 16), tonumber(c:sub(6, 7), 16) }
-end
 
-M.blend = function(foreground, background, alpha)
-  alpha = type(alpha) == "string" and (tonumber(alpha, 16) / 0xff) or alpha
-  local bg = M.hexToRgb(background)
-  local fg = M.hexToRgb(foreground)
-  local blendChannel = function(i)
-    local ret = (alpha * fg[i] + ((1 - alpha) * bg[i]))
-    return math.floor(math.min(math.max(0, ret), 255) + 0.5)
-  end
-  return string.format("#%02x%02x%02x", blendChannel(1), blendChannel(2), blendChannel(3))
-end
-
-M.darken = function(hex, amount, bg)
-  return M.blend(hex, bg or M.bg, amount)
-end
-
-M.lighten = function(hex, amount, fg)
-  return M.blend(hex, fg or M.fg, amount)
-end
-
-local function pattern_list_matches(str, pattern_list)
-  for _, pattern in ipairs(pattern_list) do
-    if str:find(pattern) then
-      return true
-    end
-  end
-  return false
-end
-
-local buf_matchers = {
-  filetype = function(bufnr)
-    return vim.bo[bufnr].filetype
-  end,
-  buftype = function(bufnr)
-    return vim.bo[bufnr].buftype
-  end,
-  bufname = function(bufnr)
-    return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
-  end,
-}
-
-M.buffer_matches = function(patterns, bufnr)
-  bufnr = bufnr or 0
-  for kind, pattern_list in pairs(patterns) do
-    if pattern_list_matches(buf_matchers[kind](bufnr), pattern_list) then
-      return true
-    end
-  end
-  return false
-end
-
-M.tm_autocmd = function(action)
-  if action == "start" then
-    local buftypes = {
-      "prompt",
-      "help",
-      "quickfix",
-      "nofile",
-    }
-    local filetypes = {
-      "neo-tree",
-      "spectre_panel",
-      "Outline",
-      "Trouble",
-      "NeogitStatus",
-      "NeogitPopup",
-      "calendar",
-      "dapui_breakpoints",
-      "dapui_scopes",
-      "dapui_stacks",
-      "dapui_watches",
-      "git",
-      "netrw",
-      "octo",
-      "undotree",
-      "diff",
-      "DiffviewFiles",
-      "flutterToolsOutline",
-      "log",
-      "toggleterm",
-      "netrw",
-      "noice",
-      "lazy",
-      "mason",
-      "DeusHelper",
-    }
-    local buftype = vim.tbl_contains(buftypes, vim.bo.buftype)
-    local filetype = vim.tbl_contains(filetypes, vim.bo.filetype)
-    if buftype or filetype then
-      vim.opt.timeoutlen = 1000
-    else
-      vim.opt.timeoutlen = 0
-    end
-    vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
-      callback = function()
-        vim.schedule(function()
-          buftype = vim.tbl_contains(buftypes, vim.bo.buftype)
-          filetype = vim.tbl_contains(filetypes, vim.bo.filetype)
-          if buftype or filetype then
-            vim.opt.timeoutlen = 1000
-          else
-            vim.opt.timeoutlen = 0
-          end
-        end)
-      end,
-      group = globals.tm_augroup,
-    })
-  elseif action == "stop" then
-    local autocommands = vim.api.nvim_get_autocmds({
-      group = globals.tm_augroup,
-    })
-
-    if next(autocommands) == nil then
-    else
-      vim.schedule(function()
-        vim.api.nvim_del_autocmd(autocommands[1]["id"])
-        vim.opt.timeoutlen = 1000
-      end)
-    end
-  end
-end
-return M
+return F

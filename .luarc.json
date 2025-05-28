@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
+  "runtime.path": [
+    "lua/?.lua",
+    "lua/?/init.lua"
+  ],
+  "completion.autoRequire": false,
+  "diagnostics.disable": [
+    "deprecated",
+    "redundant-parameter",
+    "param-type-mismatch",
+    "missing-parameter",
+    "need-check-nil",
+    "assign-type-mismatch",
+    "missing-return",
+    "different-requires",
+    "lowercase-global",
+    "undefined-field",
+    "undefined-doc-param",
+    "missing-fields"
+  ],
+  "diagnostics.globals": [
+    "vim",
+    "use",
+    "packer_plugins",
+    "NOREF_NOERR_TRUNC",
+    "lfs",
+    "hs",
+    "Store",
+    "Modules",
+    "MiniDeps",
+    "add_to_log",
+    "global"
+  ],
+  "workspace": {
+    "library": [
+      "lua",
+      "$VIMRUNTIME",
+      "${3rd}/luv/library"
+    ],
+    "checkThirdParty": false
+  }
+}
